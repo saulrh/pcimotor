@@ -1,0 +1,10 @@
+/flash.bin
+/flash.elf
+/flash.lst
+/flash.map
+/flash.o
+/flash.hex
+/flash.srec
+/flash_eeprom.bin
+/flash_eeprom.hex
+/flash_eeprom.srec
