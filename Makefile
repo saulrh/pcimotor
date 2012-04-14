@@ -216,8 +216,11 @@ ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
+# Default target: make but do not program!
+code: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
+	$(TARGET).lss $(TARGET).sym sizeafter finished end
 
-# Default target: make program!
+# all: make and program!
 all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
 	$(TARGET).lss $(TARGET).sym sizeafter finished end
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
@@ -385,5 +388,5 @@ clean_list :
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion coff extcoff \
-	clean clean_list program
+	clean clean_list program code
 
