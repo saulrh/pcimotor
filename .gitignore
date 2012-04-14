@@ -8,3 +8,5 @@
 /flash_eeprom.bin
 /flash_eeprom.hex
 /flash_eeprom.srec
+/#daughterboard.cpp#
+/.#daughterboard.cpp
