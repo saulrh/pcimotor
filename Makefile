@@ -39,15 +39,8 @@ FORMAT = ihex
 # List C source files here. (C dependencies are automatically generated.)
 SRC = $(TARGET).c
 
-# If there is more than one source file, append them above, or modify and
-# uncomment the following:
-#SRC += foo.c bar.c
-
-# You can also wrap lines by appending a backslash to the end of the line:
-#SRC += baz.c \
-#xyzzy.c
-
-
+# If there is more than one source file, append them below or above:
+SRC += clksys_driver.c
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
