@@ -68,16 +68,20 @@ int main(void)
     /* ============================== */
     /* initialization =============== */
     /* ============================== */
+    /* enable IO ports */
     io_init();
+
+    /* enable clocks */
+    clock_init();
+    
+    /* enable interrupts - things start ticking now */
+    sei();
     
     /* ============================== */
     /* main loop ==================== */
     /* ============================== */
     for(;;)
     {
-        PORTA.OUTSET = 0x70;    /* set PA5, PA6, PA7 high */
-        PORTC.OUTSET = 0x18;    /* set PC3, PC4 high */
-        PORTE.OUTSET = 0x03;    /* set PE3 high */
     }
 }
 
