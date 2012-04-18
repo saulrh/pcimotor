@@ -22,7 +22,7 @@ TARGET = daughterboard
 
 # Programming hardware: type avrdude -c ?
 # to get a full listing.
-AVRDUDE_PROGRAMMER = jtag2isp
+AVRDUDE_PROGRAMMER = avrispmkii
 
 AVRDUDE_PORT = usb			# linux for dragon
 #AVRDUDE_PORT = /dev/parport0           # linux
