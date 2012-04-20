@@ -35,16 +35,16 @@ void clock_init(void)
     /* ticks at 32MHz */
     CLKSYS_Enable(OSC_RC32MEN_bm);
     
-    /* set the clock prescaler to divide by 1 */
-    /* ticks at 32MHz */
-    CLKSYS_Prescalers_Config(CLK_PSADIV_1_gc, CLK_PSBCDIV_1_1_gc);
+    /* set the clock prescaler to divide by 2 */
+    /* ticks at 16MHz */
+    CLKSYS_Prescalers_Config(CLK_PSADIV_1_gc, CLK_PSBCDIV_1_2_gc);
 
-    /* divide main clock source by 1024 */
-    /* ticks at 31250Hz */
-    TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV1024_gc;
+    /* divide main clock source by 8 */
+    /* ticks at 2MHz */
+    TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV8_gc;
 
-    /* count to 31250k before looping; this should be half a second */
-    /* ticks at 1Hz */
+    /* count to 31250 before looping. */
+    /* ticks at 64Hz */
     TCC0.PER = 31250;
 
     /* now we wait until the 32MHz oscillator is stable */
