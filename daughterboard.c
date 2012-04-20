@@ -2,6 +2,13 @@
  * permissive open-source until i decide on one in particular,
  * probably aroudn the time it goes up on github. */
 
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Includes
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -46,13 +53,11 @@ void clock_init(void)
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
 }
 
-/* when the clock triggers, toggle all the LEDs */
-ISR(TCC0_OVF_vect)
-{
-    PORTA.OUTTGL = 0x70;    /* toggle PA5, PA6, PA7 */
-    PORTC.OUTTGL = 0x18;    /* toggle PC3, PC4 */
-    PORTE.OUTTGL = 0x03;    /* toggle PE3 */
-}
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Util functions
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 void io_init(void)
 {
@@ -63,6 +68,33 @@ void io_init(void)
     PORTE.DIRSET = 0xFF;
 }
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Entry points
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void TWIE_SlaveProcessData(void)
+{
+    /* number of received bytes is in twiSlave.bytesReceived */
+    /* data is in twiSlave.receivedData[] */
+    /* can return data by setting twiSlave.sendData[] */
+
+    /* to make sure things work: write back the bytes, inverted */
+    uint8_t bufIndex = twiSlave.bytesReceived;
+    twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
+}
+
+/* Clock 0 interrupt */
+ISR(TCC0_OVF_vect)
+{
+    /* toggle all the LEDs */
+    PORTA.OUTTGL = PIN5_bm | PIN6_bm | PIN7_bm; /* toggle PA5, PA6, PA7 */
+    PORTC.OUTTGL = PIN3_bm | PIN4_bm;           /* toggle PC3, PC4 */
+    PORTE.OUTTGL = PIN1_bm | PIN3_bm;           /* toggle PE3 */
+}
+
+/* main function */
 int main(void)
 {
     /* ============================== */
