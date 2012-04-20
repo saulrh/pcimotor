@@ -16,12 +16,53 @@
 
 #include "avr_compiler.h"
 #include "clksys_driver.h"
+#include "twi_slave_driver.h"
+#include "daughterboard.h"
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Defines
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
-#ifndef F_CPU
-#define F_CPU 32000000
-#endif
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// TWI
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
+#define SLAVE_ADDRESS 0x55
+#define BAUDRATE 100000
+#define TWI_BAUDSETTING (TWI_BAUD(F_CPU, BAUDRATE))
+
+TWI_Slave_t twiSlave;            /* TWI slave module. */
+
+void twi_init(void)
+{
+    PORTE.DIRCLR = PIN0_bm | PIN1_bm; /* ports 0 and 1 are I2C */
+    /* set ports 0 and 1 to use internal pullup resistors */
+    PORTE.PIN0CTRL = (PORTE.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDAND_gc;
+    PORTE.PIN1CTRL = (PORTE.PIN1CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDAND_gc;
+    
+    /* set our callback */
+    TWI_SlaveInitializeDriver(&twiSlave, &TWIE, TWIE_SlaveProcessData);
+    /* low-priority interrupt */
+    TWI_SlaveInitializeModule(&twiSlave, SLAVE_ADDRESS, TWI_SLAVE_INTLVL_LO_gc);
+
+    /* enable low-priority interrupts */
+    PMIC.CTRL |= PMIC_LOLVLEN_bm;
+}
+
+ISR(TWIE_TWIS_vect)
+{
+    TWI_SlaveInterruptHandler(&twiSlave);
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Clock
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 void clock_init(void)
 {
@@ -103,11 +144,16 @@ int main(void)
     /* enable IO ports */
     io_init();
 
+    /* enable TWI as slave */
+    twi_init();
+
     /* enable clocks */
     clock_init();
     
     /* enable interrupts - things start ticking now */
     sei();
+
+    /* PORTE.OUTSET = PIN0_bm | PIN1_bm; */
     
     /* ============================== */
     /* main loop ==================== */
