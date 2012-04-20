@@ -41,6 +41,8 @@ SRC = $(TARGET).c
 
 # If there is more than one source file, append them below or above:
 SRC += clksys_driver.c
+SRC += twi_master_driver.c
+SRC += twi_slave_driver.c
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
