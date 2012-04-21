@@ -42,22 +42,23 @@ uint8_t twi_last_read = 0x00;
 
 #define SLAVE_ADDRESS 0x55
 #define BAUDRATE 100000
-#define TWI_BAUDSETTING (TWI_BAUD(F_CPU, BAUDRATE))
+#define TWI_BAUDSETTING TWI_BAUD(F_CPU, BAUDRATE)
 
 TWI_Slave_t twiSlave;            /* TWI slave module. */
 
-void twi_init(void)
+void init_twi(void)
 {
     /* make sure our I2C pins are set to input */
-    PORTE.DIRCLR = PIN_SDA_1 | PIN_SCL_1;
+    PORTC.DIRCLR = PIN_SDA_2 | PIN_SCL_2;
 
     /* set them to use internal pullup resistors */
-    PORTCFG.MPCMASK = PIN_SDA_1 | PIN_SCL_1;
-    PORTE.PIN0CTRL = (PORTE.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDANDPULL_gc;
+    PORTCFG.MPCMASK = PIN_SDA_2 | PIN_SCL_2;
+    PORTC.PIN0CTRL = (PORTC.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_PULLUP_gc;
     PORTCFG.MPCMASK = 0x00;
     
     /* set our callback */
-    TWI_SlaveInitializeDriver(&twiSlave, &TWIE, TWIE_SlaveProcessData);
+    TWI_SlaveInitializeDriver(&twiSlave, &TWIC, TWIE_SlaveProcessData);
+
     /* low-priority interrupt */
     TWI_SlaveInitializeModule(&twiSlave, SLAVE_ADDRESS, TWI_SLAVE_INTLVL_LO_gc);
 
@@ -65,7 +66,7 @@ void twi_init(void)
     PMIC.CTRL |= PMIC_LOLVLEN_bm;
 }
 
-ISR(TWIE_TWIS_vect)
+ISR(TWIC_TWIS_vect)
 {
     TWI_SlaveInterruptHandler(&twiSlave);
 }
