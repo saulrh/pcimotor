@@ -48,10 +48,13 @@ TWI_Slave_t twiSlave;            /* TWI slave module. */
 
 void twi_init(void)
 {
-    PORTE.DIRCLR = PIN0_bm | PIN1_bm; /* ports 0 and 1 are I2C */
-    /* set ports 0 and 1 to use internal pullup resistors */
-    PORTE.PIN0CTRL = (PORTE.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDAND_gc;
-    PORTE.PIN1CTRL = (PORTE.PIN1CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDAND_gc;
+    /* make sure our I2C pins are set to input */
+    PORTE.DIRCLR = PIN_SDA_1 | PIN_SCL_1;
+
+    /* set them to use internal pullup resistors */
+    PORTCFG.MPCMASK = PIN_SDA_1 | PIN_SCL_1;
+    PORTE.PIN0CTRL = (PORTE.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_WIREDANDPULL_gc;
+    PORTCFG.MPCMASK = 0x00;
     
     /* set our callback */
     TWI_SlaveInitializeDriver(&twiSlave, &TWIE, TWIE_SlaveProcessData);
