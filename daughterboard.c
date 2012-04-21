@@ -163,8 +163,6 @@ int main(void)
     /* enable interrupts - things start ticking now */
     sei();
 
-    /* PORTE.OUTSET = PIN0_bm | PIN1_bm; */
-    
     /* ============================== */
     /* main loop ==================== */
     /* ============================== */
