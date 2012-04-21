@@ -124,9 +124,9 @@ void init_clock(void)
     /* ticks at 2MHz */
     TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV8_gc;
 
-    /* count to 31250 before looping. */
-    /* ticks at 64Hz */
-    TCC0.PER = 31250;
+    /* count to 200 before looping. */
+    /* ticks at 1kHz */
+    TCC0.PER = 200;
 
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
