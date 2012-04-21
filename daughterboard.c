@@ -114,11 +114,9 @@ void clock_init(void)
 
 void io_init(void)
 {
-    PORTA.DIRSET = 0xFF;
-    PORTB.DIRSET = 0xFF;
-    PORTC.DIRSET = 0xFF;
-    PORTD.DIRSET = 0xFF;
-    PORTE.DIRSET = 0xFF;
+    PORTA.DIRSET = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
+    PORTC.DIRSET = PIN_LED_MOT_A | PIN_LED_MOT_B;
+    PORTE.DIRSET = PIN_LED_ERROR_2;
 }
 
 /////////////////////////////////////////////////////////////////////////
