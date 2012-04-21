@@ -133,21 +133,30 @@ void TWIE_SlaveProcessData(void)
 
     /* to make sure things work: write back the bytes, inverted */
     uint8_t bufIndex = twiSlave.bytesReceived;
-    twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
+    twi_last_read = 0xff;
+    /* twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]); */
+    twiSlave.sendData[bufIndex] = 0x55;
 }
 
 /* Clock 0 interrupt */
 ISR(TCC0_OVF_vect)
 {
-    /* toggle all the LEDs */
-    PORTA.OUTTGL = PIN5_bm | PIN6_bm | PIN7_bm; /* toggle PA5, PA6, PA7 */
-    PORTC.OUTTGL = PIN3_bm | PIN4_bm;           /* toggle PC3, PC4 */
-    PORTE.OUTTGL = PIN1_bm | PIN3_bm;           /* toggle PE3 */
+    /* bit ordering reflects physical LED layout right to left */
+    
+    if (twi_last_read & (1 << 5)) PORTA.OUTSET = PIN_LED_POWER;
+    if (twi_last_read & (1 << 4)) PORTA.OUTSET = PIN_LED_ORDERS;
+    if (twi_last_read & (1 << 3)) PORTA.OUTSET = PIN_LED_ERROR_1;
+
+    if (twi_last_read & (1 << 2)) PORTC.OUTSET = PIN_LED_MOT_A;
+    if (twi_last_read & (1 << 1)) PORTC.OUTSET = PIN_LED_MOT_B;
+    
+    if (twi_last_read & (1 << 0)) PORTE.OUTSET = PIN_LED_ERROR_2;
 }
 
 /* main function */
 int main(void)
 {
+
     /* ============================== */
     /* initialization =============== */
     /* ============================== */
