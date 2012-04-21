@@ -55,7 +55,6 @@ int main(void);
 #define PIN_SDA_1 PIN0_bm
 #define PIN_SCL_1 PIN1_bm
 #define PIN_DIGITAL_6 PIN2_bm
-#define PIN_LED_MOT_B PIN4_bm
 #define PIN_LED_ERROR_2 PIN3_bm
 
 /* port R pins */
