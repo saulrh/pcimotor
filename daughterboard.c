@@ -198,14 +198,21 @@ int main(void)
     /* ============================== */
     /* initialization =============== */
     /* ============================== */
-    /* enable IO ports */
-    io_init();
 
-    /* enable TWI as slave */
-    twi_init();
+    /* set up LED pins */
+    init_leds();
 
-    /* enable clocks */
-    clock_init();
+    /* set up I2C as slave */
+    init_twi();
+
+    /* set up our clocks */
+    init_clock();
+    
+    /* set up sensors */
+    init_sensors();
+
+    /* set up motors */
+    init_motors();
     
     /* enable interrupts - things start ticking now */
     sei();
@@ -217,6 +224,3 @@ int main(void)
     {
     }
 }
-
-
-
