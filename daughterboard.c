@@ -81,7 +81,7 @@ void clock_init(void)
     /* medium-priority interrupt */
     TCC0.INTCTRLA = (TCC0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
     
-    /* low-level interrupt routine in PMIC */
+    /* enable mid-priority interrupts */
     PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
     /* start the 32MHz ring oscillator ticking */
