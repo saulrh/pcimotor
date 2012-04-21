@@ -71,13 +71,40 @@ ISR(TWIC_TWIS_vect)
     TWI_SlaveInterruptHandler(&twiSlave);
 }
 
+void TWIE_SlaveProcessData(void)
+{
+    /* number of received bytes is in twiSlave.bytesReceived */
+    /* data is in twiSlave.receivedData[] */
+    /* can return data by setting twiSlave.sendData[] */
+
+
+    /* to make sure things work: write back the bytes, inverted */
+    uint8_t bufIndex = twiSlave.bytesReceived;
+    twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
+    /* twiSlave.sendData[bufIndex] = 0x55; */
+
+    PORTA.OUTCLR = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
+    PORTC.OUTCLR = PIN_LED_MOT_A | PIN_LED_MOT_B;
+    PORTE.OUTCLR = PIN_LED_ERROR_2;
+
+    /* bit ordering reflects physical LED layout right to left */
+    if (twiSlave.receivedData[bufIndex] & (1 << 5)) PORTA.OUTSET = PIN_LED_POWER;
+    if (twiSlave.receivedData[bufIndex] & (1 << 4)) PORTA.OUTSET = PIN_LED_ORDERS;
+    if (twiSlave.receivedData[bufIndex] & (1 << 3)) PORTA.OUTSET = PIN_LED_ERROR_1;
+
+    if (twiSlave.receivedData[bufIndex] & (1 << 2)) PORTE.OUTSET = PIN_LED_ERROR_2;
+
+    if (twiSlave.receivedData[bufIndex] & (1 << 1)) PORTC.OUTSET = PIN_LED_MOT_A;
+    if (twiSlave.receivedData[bufIndex] & (1 << 0)) PORTC.OUTSET = PIN_LED_MOT_B;
+}
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Clock
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-void clock_init(void)
+void init_clock(void)
 {
     /* medium-priority interrupt */
     TCC0.INTCTRLA = (TCC0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
@@ -107,51 +134,61 @@ void clock_init(void)
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
 }
 
+/* Clock 0 interrupt */
+ISR(TCC0_OVF_vect)
+{
+    do_sensors();
+    do_motors();
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Sensors
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void init_sensors(void)
+{
+}
+
+void do_sensors(void)
+{
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Motors
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void init_motors(void)
+{
+    /* enable motors */
+    /* PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1 | PIN_MOT_CONTROL_EN2; */
+    /* PORTD.OUTSET  = PIN_MOT_CONTROL_EN_1 | PIN_MOT_CONTROL_EN2; */
+}
+
+void do_motors(void)
+{
+}
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Util functions
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-void io_init(void)
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Other
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void init_leds(void)
 {
     PORTA.DIRSET = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
     PORTC.DIRSET = PIN_LED_MOT_A | PIN_LED_MOT_B;
     PORTE.DIRSET = PIN_LED_ERROR_2;
-}
-
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-/// Entry points
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-
-void TWIE_SlaveProcessData(void)
-{
-    /* number of received bytes is in twiSlave.bytesReceived */
-    /* data is in twiSlave.receivedData[] */
-    /* can return data by setting twiSlave.sendData[] */
-
-    /* to make sure things work: write back the bytes, inverted */
-    uint8_t bufIndex = twiSlave.bytesReceived;
-    twi_last_read = 0xff;
-    /* twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]); */
-    twiSlave.sendData[bufIndex] = 0x55;
-}
-
-/* Clock 0 interrupt */
-ISR(TCC0_OVF_vect)
-{
-    /* bit ordering reflects physical LED layout right to left */
-    
-    if (twi_last_read & (1 << 5)) PORTA.OUTSET = PIN_LED_POWER;
-    if (twi_last_read & (1 << 4)) PORTA.OUTSET = PIN_LED_ORDERS;
-    if (twi_last_read & (1 << 3)) PORTA.OUTSET = PIN_LED_ERROR_1;
-
-    if (twi_last_read & (1 << 2)) PORTC.OUTSET = PIN_LED_MOT_A;
-    if (twi_last_read & (1 << 1)) PORTC.OUTSET = PIN_LED_MOT_B;
-    
-    if (twi_last_read & (1 << 0)) PORTE.OUTSET = PIN_LED_ERROR_2;
 }
 
 /* main function */
