@@ -72,6 +72,68 @@
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
+
+/////////////////////////////////////////
+// peripheral junk
+
+typedef enum {
+    LED_BEHAVIOR_OFF = 1,
+    LED_BEHAVIOR_ON = 2,
+    LED_BEHAVIOR_TIMED = 3,
+} led_behavior_e;
+
+
+
+
+/////////////////////////////////////////
+// declarations you care about
+
+/* stores PID settings and controller state, motor and sensor
+ * channels, and so on */
+typedef struct {
+} controller_t;
+
+/* stores motor configuration, state, and data */
+typedef struct {
+} motor_t;
+
+/* stores sensor configuration and data */
+typedef struct {
+} sensor_t;
+
+/* stores LED configuration and state */
+typedef struct {
+    led_behavior_e behavior;
+    uint16_t time;
+} led_t;
+
+typedef double (*sensorfunc)(void);
+
+typedef struct {
+    sensorfunc 
+} sensor_t;
+
+/////////////////////////////////////////
+// variables you care about
+
+/* these are for controlling LEDs. In OFF or ON mode, the LED will
+ * just be on or off. In timed mode, set .time to the number of calls
+ * to do_leds() to turn the specified LED on for. do_leds is by called
+ * in the ISR for clock0, which ticks at 10kHz, so the default is that
+ * the led will light for .time/10 milliseconds. */
+
+led_t led_power;
+led_t led_orders;
+led_t led_error1;
+led_t led_error2;
+led_t led_mota;
+led_t led_motb;
+
+sensorfunc sensor_functions[16];
+
+
+
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Function Declarations
@@ -86,6 +148,7 @@ void init_motors(void);
 
 void do_sensors(void);
 void do_motors(void);
+void do_leds(void);
 
 /////////////////////////////////////////
 // util functions
