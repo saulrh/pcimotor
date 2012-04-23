@@ -15,8 +15,8 @@
 /* #include <avr/sleep.h> */
 
 #include "avr_compiler.h"
-#include "clksys_driver.h"
-#include "twi_slave_driver.h"
+#include "clksys/clksys_driver.h"
+#include "twi/twi_slave_driver.h"
 #include "daughterboard.h"
 
 /////////////////////////////////////////////////////////////////////////
