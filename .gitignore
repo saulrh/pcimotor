@@ -10,3 +10,15 @@
 *.lai
 *.la
 *.a
+
+# Compiled AVR binaries
+*.bin
+*.elf
+*.lst
+*.map
+*.hex
+*.srec
+*.d
+*.eep
+*.lss
+*.sym
