@@ -82,7 +82,7 @@ typedef enum {
     LED_BEHAVIOR_TIMED = 3,
 } led_behavior_e;
 
-
+typedef double (*sensorfunc)(void);
 
 
 /////////////////////////////////////////
@@ -97,20 +97,15 @@ typedef struct {
 typedef struct {
 } motor_t;
 
-/* stores sensor configuration and data */
-typedef struct {
-} sensor_t;
-
 /* stores LED configuration and state */
 typedef struct {
     led_behavior_e behavior;
     uint16_t time;
 } led_t;
 
-typedef double (*sensorfunc)(void);
-
+/* stores sensor configuration and data */
 typedef struct {
-    sensorfunc 
+    sensorfunc get;
 } sensor_t;
 
 /////////////////////////////////////////
