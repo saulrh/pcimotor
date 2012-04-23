@@ -25,14 +25,19 @@
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Declarations
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////
+// private variables
 uint8_t twi_last_read = 0x00;
+
+/////////////////////////////
+// private functions
+uint8_t led_check_value(led_t*);
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -76,26 +81,15 @@ void TWIE_SlaveProcessData(void)
     /* number of received bytes is in twiSlave.bytesReceived */
     /* data is in twiSlave.receivedData[] */
     /* can return data by setting twiSlave.sendData[] */
-
+    /* theoretically, at least. I haven't figured everything out yet. */
 
     /* to make sure things work: write back the bytes, inverted */
     uint8_t bufIndex = twiSlave.bytesReceived;
     twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
     /* twiSlave.sendData[bufIndex] = 0x55; */
 
-    PORTA.OUTCLR = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
-    PORTC.OUTCLR = PIN_LED_MOT_A | PIN_LED_MOT_B;
-    PORTE.OUTCLR = PIN_LED_ERROR_2;
-
-    /* bit ordering reflects physical LED layout right to left */
-    if (twiSlave.receivedData[bufIndex] & (1 << 5)) PORTA.OUTSET = PIN_LED_POWER;
-    if (twiSlave.receivedData[bufIndex] & (1 << 4)) PORTA.OUTSET = PIN_LED_ORDERS;
-    if (twiSlave.receivedData[bufIndex] & (1 << 3)) PORTA.OUTSET = PIN_LED_ERROR_1;
-
-    if (twiSlave.receivedData[bufIndex] & (1 << 2)) PORTE.OUTSET = PIN_LED_ERROR_2;
-
-    if (twiSlave.receivedData[bufIndex] & (1 << 1)) PORTC.OUTSET = PIN_LED_MOT_A;
-    if (twiSlave.receivedData[bufIndex] & (1 << 0)) PORTC.OUTSET = PIN_LED_MOT_B;
+    led_orders.behavior = LED_BEHAVIOR_TIMED;
+    led_orders.time = 2500;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -125,7 +119,7 @@ void init_clock(void)
     TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV8_gc;
 
     /* count to 200 before looping. */
-    /* ticks at 1kHz */
+    /* ticks at 10kHz */
     TCC0.PER = 200;
 
     /* now we wait until the 32MHz oscillator is stable */
@@ -135,8 +129,10 @@ void init_clock(void)
 }
 
 /* Clock 0 interrupt */
+/* Clock 0 ticks at 10kHz */
 ISR(TCC0_OVF_vect)
 {
+    do_leds();
     do_sensors();
     do_motors();
 }
@@ -174,6 +170,52 @@ void do_motors(void)
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
+/// LEDs
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void init_leds(void)
+{
+    PORTA.DIRSET = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
+    PORTC.DIRSET = PIN_LED_MOT_A | PIN_LED_MOT_B;
+    PORTE.DIRSET = PIN_LED_ERROR_2;
+
+    led_power.behavior = LED_BEHAVIOR_ON;
+}
+
+uint8_t led_check_value(led_t* led)
+{
+    switch (led->behavior)
+    {
+    case LED_BEHAVIOR_ON:
+        return true;
+        break;
+    case LED_BEHAVIOR_OFF:
+        return false;
+        break;
+    case LED_BEHAVIOR_TIMED:
+        if (led->time > 0)
+        {
+            led->time--;
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
+void do_leds(void)
+{
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_POWER) | (led_check_value(&led_power) ? PIN_LED_POWER : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ORDERS) | (led_check_value(&led_orders) ? PIN_LED_ORDERS : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ERROR_1) | (led_check_value(&led_error1) ? PIN_LED_ERROR_1 : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ERROR_2) | (led_check_value(&led_error2) ? PIN_LED_ERROR_2 : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_MOT_A) | (led_check_value(&led_motb) ? PIN_LED_MOT_A : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_MOT_B) | (led_check_value(&led_mota) ? PIN_LED_MOT_B : 0);
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 /// Util functions
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -184,17 +226,9 @@ void do_motors(void)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
-void init_leds(void)
-{
-    PORTA.DIRSET = PIN_LED_POWER | PIN_LED_ORDERS | PIN_LED_ERROR_1;
-    PORTC.DIRSET = PIN_LED_MOT_A | PIN_LED_MOT_B;
-    PORTE.DIRSET = PIN_LED_ERROR_2;
-}
-
 /* main function */
 int main(void)
 {
-
     /* ============================== */
     /* initialization =============== */
     /* ============================== */
