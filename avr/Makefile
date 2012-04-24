@@ -1,5 +1,6 @@
 # WinAVR Sample makefile written by Eric B. Weddington, J�rg Wunsch, et al.
 # Modified (bringing often-changed options to the top) by Elliot Williams
+# Modified by Saul Reynolds-Haertle to make the default to build but not program
 
 # make all = Make software and program
 # make clean = Clean out built project files.
