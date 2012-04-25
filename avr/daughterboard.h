@@ -160,6 +160,6 @@ void do_leds(void);
 
 /////////////////////////////////////////
 // util functions
-void TWIE_SlaveProcessData(void);
+void TWIC_SlaveProcessData(void);
 
 int main(void);
