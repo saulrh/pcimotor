@@ -15,13 +15,6 @@
 /* along with this program; if not, write to the Free Software */
 /* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
-
-
-/* written by saul reynolds-haertle 2012. license is generic
- * permissive open-source until i decide on one in particular,
- * probably aroudn the time it goes up on github. */
-
-
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Includes
