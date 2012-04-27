@@ -101,14 +101,26 @@ typedef double (*sensorfunc)(void);
 /////////////////////////////////////////
 // declarations you care about
 
-/* stores PID settings and controller state, motor and sensor
- * channels, and so on */
+/* stores PID settings and other controller state */
 typedef struct {
+    double P;
+    double I;
+    double D;
+    double e_last;
+    double e_cur;
+    double e_int;
+    double target;
 } controller_t;
 
 /* stores motor configuration, state, and data */
 typedef struct {
-} motor_t;
+    uint8_t sensorchan;
+    uint8_t closed;
+    uint16_t duty;              /* range is 0-1000 */
+    uint16_t duty_count;
+    uint8_t direction;
+    controller_t cont;
+} motor_channel_t;
 
 /* stores LED configuration and state */
 typedef struct {
@@ -139,6 +151,8 @@ led_t led_motb;
 
 sensorfunc sensor_functions[16];
 
+motor_channel_t motA;
+motor_channel_t motB;
 
 
 
