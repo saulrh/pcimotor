@@ -78,7 +78,6 @@
 #define PIN_SWITCH_1 PIN1_bm
 #define PIN_SWITCH_2 PIN2_bm
 
-
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Type and Variable Declarations
@@ -139,8 +138,8 @@ typedef struct {
 /* these are for controlling LEDs. In OFF or ON mode, the LED will
  * just be on or off. In timed mode, set .time to the number of calls
  * to do_leds() to turn the specified LED on for. do_leds is by called
- * in the ISR for clock0, which ticks at 10kHz, so the default is that
- * the led will light for .time/10 milliseconds. */
+ * in the ISR for clock 1, which ticks at 10kHz, so the default is
+ * that the led will light for .time/10 milliseconds. */
 
 led_t led_power;
 led_t led_orders;

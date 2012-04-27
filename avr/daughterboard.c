@@ -47,11 +47,6 @@
 // private variables
 uint8_t twi_last_read = 0x00;
 
-int count;
-int count_period;
-int ledcounter;
-
-
 /////////////////////////////
 // private functions
 uint8_t led_check_value(led_t*);
@@ -74,9 +69,9 @@ void init_twi(void)
     PORTC.DIRCLR = PIN_SDA_2 | PIN_SCL_2;
 
     /* set them to use internal pullup resistors */
-    /* PORTCFG.MPCMASK = PIN_SDA_2 | PIN_SCL_2; */
-    /* PORTC.PIN0CTRL = (PORTC.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_PULLUP_gc; */
-    /* PORTCFG.MPCMASK = 0x00; */
+    PORTCFG.MPCMASK = PIN_SDA_2 | PIN_SCL_2;
+    PORTC.PIN0CTRL = (PORTC.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_PULLUP_gc;
+    PORTCFG.MPCMASK = 0x00;
     
     /* set our callback */
     TWI_SlaveInitializeDriver(&twiSlave, &TWIC, TWIC_SlaveProcessData);
@@ -102,15 +97,11 @@ void TWIC_SlaveProcessData(void)
 
     /* to make sure things work: write back the bytes, inverted */
     uint8_t bufIndex = twiSlave.bytesReceived;
-    /* twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]); */
-    twiSlave.sendData[bufIndex] = 0x55;
+    twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
+    /* twiSlave.sendData[bufIndex] = 0x55; */
 
 
-    uint8_t rec = twiSlave.receivedData[bufIndex];
-    if (rec & 1)
-        count_period *= 2;
-    else
-        count_period /= 2;
+    /* uint8_t rec = twiSlave.receivedData[bufIndex]; */
     /* twiSlave.sendData[bufIndex] = 0x55; */
 
     led_orders.behavior = LED_BEHAVIOR_TIMED;
@@ -127,56 +118,68 @@ void init_clock(void)
 {
     /* medium-priority interrupt */
     TCC0.INTCTRLA = (TCC0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
-    
+
     /* enable mid-priority interrupts */
     PMIC.CTRL |= PMIC_MEDLVLEN_bm;
+
+    /* single-slope PWM */
+    TCC1.CTRLB = (TCC1.CTRLB & ~TC1_WGMODE_gm) | TC_WGMODE_SS_gc;
 
     /* start the 32MHz ring oscillator ticking */
     /* ticks at 32MHz */
     CLKSYS_Enable(OSC_RC32MEN_bm);
     
-    /* set the clock prescaler to divide by 2 */
+    /* set the clock prescaler to divide by 1 */
+    /* ticks at 32MHz */
+    CLKSYS_Prescalers_Config(CLK_PSADIV_1_gc, CLK_PSBCDIV_1_1_gc);
+
+    /////////////////////////////
+    /* clock 1 */
+    /* we use clock 1 for control loops because the avr-gcc headers
+     * only has the registers for PWMing TC0 */
+
+    /* divide main clock source by 2 */
     /* ticks at 16MHz */
-    CLKSYS_Prescalers_Config(CLK_PSADIV_1_gc, CLK_PSBCDIV_1_2_gc);
+    TCC1.CTRLA = (TCC1.CTRLA & ~TC1_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
 
-    /* divide main clock source by 8 */
-    /* ticks at 2MHz */
-    TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV8_gc;
-
-    /* count to 200 before looping. */
+    /* count to 1600 before looping. */
     /* ticks at 10kHz */
-    TCC0.PER = 200;
+    /* we use this for handling control loops */
+    TCC1.PER = 1600;
+
+    /////////////////////////////
+    /* clock 0 */
+
+    /* divide main clock source by 2 */
+    /* ticks at 16MHz */
+    TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
+
+    /* count to 16000 before looping. */
+    /* ticks at 1kHz */
+    /* we use its A and B comparators for motor PWM */
+    TCC0.PER = 16000;
+    TCC0.CTRLB |= TC0_CCAEN_bm;
+    TCC0.CTRLB |= TC0_CCBEN_bm;
+    TCC0.CCA = 0;
+    TCC0.CCB = 0;
 
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
     /* and select it */
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
-
-    count = 0;
-    count_period = 5000;
-    ledcounter = 0;
 }
 
-/* Clock 0 interrupt */
-/* Clock 0 ticks at 10kHz */
-ISR(TCC0_OVF_vect)
+/* Clock 1 interrupt */
+/* Clock 1 ticks at 10kHz */
+ISR(TCC1_OVF_vect)
 {
     do_leds();
     do_sensors();
     do_motors();
+}
 
-    ;
-    if (count++ > count_period)
-    {
-        count = 0;
-        ledcounter++;
-        led_motb.behavior = (ledcounter & (1<<0)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-        led_mota.behavior = (ledcounter & (1<<1)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-        led_error2.behavior = (ledcounter & (1<<2)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-        led_error1.behavior = (ledcounter & (1<<3)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-        led_orders.behavior = (ledcounter & (1<<4)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-        led_power.behavior = (ledcounter & (1<<5)) ? LED_BEHAVIOR_ON : LED_BEHAVIOR_OFF;
-    }
+ISR(TCC0_OVF_vect)
+{
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -189,6 +192,8 @@ void init_sensors(void)
 {
 }
 
+/* read sensors */
+/* update PID controllers */
 void do_sensors(void)
 {
 }
@@ -202,13 +207,54 @@ void do_sensors(void)
 void init_motors(void)
 {
     /* enable motors */
-    PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1 | PIN_MOT_CONTROL_EN_2;
     PORTC.DIRSET |= PIN_LED_MOT_A | PIN_LED_MOT_B;
-    /* PORTD.OUTSET  = PIN_MOT_CONTROL_EN_1 | PIN_MOT_CONTROL_EN2; */
+
+    /* PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN_2; */
+    /* PORTD.OUTSET  = PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN2; */
+    
+    motA.duty = 0;
+    motA.sensorchan = 0; 
+    motA.closed = false;
+    motA.cont.P = 0.0;
+    motA.cont.I = 0.0;
+    motA.cont.D = 0.0;
+    motA.cont.e_last = 0.0;
+    motA.cont.e_cur = 0.0;
+    motA.cont.e_int = 0.0;
+    motA.cont.target = 0.0;
+    motB.duty = 0;
+    motB.sensorchan = 0; 
+    motB.closed = false;
+    motB.cont.P = 0.0;
+    motB.cont.I = 0.0;
+    motB.cont.D = 0.0;
+    motB.cont.e_last = 0.0;
+    motB.cont.e_cur = 0.0;
+    motB.cont.e_int = 0.0;
+    motB.cont.target = 0.0;
 }
 
+/* Called by clock 1 at 100kHz */
 void do_motors(void)
 {
+    /* motA.duty_count = (motA.duty_count+1) % MOTOR_PRECISION; */
+    /* motB.duty_count = (motB.duty_count+1) % MOTOR_PRECISION; */
+    /* if (motA.duty_count > motA.duty) */
+    /* { */
+    /*     PORTC.OUTSET = PIN_LED_MOT_A; */
+    /* } */
+    /* else */
+    /* { */
+    /*     PORTC.OUTCLR = PIN_LED_MOT_A; */
+    /* } */
+    /* if (motB.duty_count > motB.duty) */
+    /* { */
+    /*     PORTC.OUTSET = PIN_LED_MOT_B; */
+    /* } */
+    /* else */
+    /* { */
+    /*     PORTC.OUTCLR = PIN_LED_MOT_B; */
+    /* } */
 }
 
 /////////////////////////////////////////////////////////////////////////
