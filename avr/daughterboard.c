@@ -152,21 +152,26 @@ void init_clock(void)
 
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
-    TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
+    TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
 
     /* count to 16000 before looping. */
     /* ticks at 1kHz */
     /* we use its A and B comparators for motor PWM */
-    TCC0.PER = 16000;
-    TCC0.CTRLB |= TC0_CCAEN_bm;
-    TCC0.CTRLB |= TC0_CCBEN_bm;
-    TCC0.CCA = 0;
-    TCC0.CCB = 0;
-
+    TCD0.PER = 16000;
+    TCD0.CTRLB |= TC0_CCAEN_bm;
+    TCD0.CTRLB |= TC0_CCBEN_bm;
+    TCD0.CCA = 0;
+    TCD0.CCB = 0;
+    
+    //Added by Chris
+ 
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
     /* and select it */
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
+    
+   
+    
 }
 
 /* Clock 1 interrupt */
