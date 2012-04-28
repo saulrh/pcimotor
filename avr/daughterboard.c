@@ -116,15 +116,6 @@ void TWIC_SlaveProcessData(void)
 
 void init_clock(void)
 {
-    /* medium-priority interrupt */
-    TCC0.INTCTRLA = (TCC0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
-
-    /* enable mid-priority interrupts */
-    PMIC.CTRL |= PMIC_MEDLVLEN_bm;
-
-    /* single-slope PWM */
-    TCC1.CTRLB = (TCC1.CTRLB & ~TC1_WGMODE_gm) | TC_WGMODE_SS_gc;
-
     /* start the 32MHz ring oscillator ticking */
     /* ticks at 32MHz */
     CLKSYS_Enable(OSC_RC32MEN_bm);
@@ -136,7 +127,13 @@ void init_clock(void)
     /////////////////////////////
     /* clock 1 */
     /* we use clock 1 for control loops because the avr-gcc headers
-     * only has the registers for PWMing TC0 */
+     * only have the registers for PWMing TC0 */
+
+    /* medium-priority interrupt */
+    TCC1.INTCTRLA = (TCC1.INTCTRLA & ~TC1_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
+
+    /* enable mid-priority interrupts */
+    PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
@@ -150,30 +147,31 @@ void init_clock(void)
     /////////////////////////////
     /* clock 0 */
 
+    /* single-slope PWM */
+    TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc;
+
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
-    TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
+    TCD0.CTRLB = (TCD0.CTRLB & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
 
     /* count to 16000 before looping. */
     /* ticks at 1kHz */
     /* we use its A and B comparators for motor PWM */
     TCD0.PER = 16000;
-    TCD0.CTRLB |= TC0_CCAEN_bm;
-    TCD0.CTRLB |= TC0_CCBEN_bm;
-    TCD0.CCA = 0;
-    TCD0.CCB = 0;
+    TCD0.CTRLB |= TC0_CCAEN_bm; /* CCA is for motA */
+    TCD0.CTRLB |= TC0_CCBEN_bm; /* CCB is for motB */
+    TCD0.CCA = 16000;
+    TCD0.CCB = 16000;
  
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
     /* and select it */
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
-    
-   
-    
 }
 
 /* Clock 1 interrupt */
 /* Clock 1 ticks at 10kHz */
+/* use this for control loop */
 ISR(TCC1_OVF_vect)
 {
     do_leds();
@@ -181,7 +179,7 @@ ISR(TCC1_OVF_vect)
     do_motors();
 }
 
-ISR(TCC0_OVF_vect)
+ISR(TCD0_OVF_vect)
 {
 }
 
@@ -209,17 +207,19 @@ void do_sensors(void)
 
 void init_motors(void)
 {
-    /* enable motors */
+    /* enable motor led pins */
     PORTC.DIRSET |= PIN_LED_MOT_A | PIN_LED_MOT_B;
 
+    /* enable motor pins */
     PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN_2;
-    /* PORTD.OUTSET  = PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN2; */
     PORTD.DIRSET |= PIN_MOT_CONTROL_A_2|PIN_MOT_CONTROL_B_2;
     PORTD.DIRSET |= PIN_MOT_CONTROL_A_1|PIN_MOT_CONTROL_B_1;
-
+    
+    /* clear out motor structs */
     motA.duty = 0;
     motA.sensorchan = 0; 
     motA.closed = false;
+    motA.direction = false;
     motA.cont.P = 0.0;
     motA.cont.I = 0.0;
     motA.cont.D = 0.0;
@@ -227,9 +227,11 @@ void init_motors(void)
     motA.cont.e_cur = 0.0;
     motA.cont.e_int = 0.0;
     motA.cont.target = 0.0;
+
     motB.duty = 0;
     motB.sensorchan = 0; 
     motB.closed = false;
+    motB.direction = false;
     motB.cont.P = 0.0;
     motB.cont.I = 0.0;
     motB.cont.D = 0.0;
@@ -242,40 +244,19 @@ void init_motors(void)
 /* Called by clock 1 at 100kHz */
 void do_motors(void)
 {
-    motA.duty_count = (motA.duty_count+1) % MOTOR_PRECISION; 
-    motB.duty_count = (motB.duty_count+1) % MOTOR_PRECISION;
-    
     /* Set motA duty cycle */
     TCD0.CCA = motA.duty;
     
     /* Set motB duty cycle */
     TCD0.CCB = motB.duty;
-    
+
     /* Set the Direction for motA */
-    PORTD.OUTSET = (motA.direction) ? PIN_MOT_CONTROL_A_1 : PIN_MOT_CONTROL_B_1;
-    PORTD.OUTCLR = (motA.direction) ? PIN_MOT_CONTROL_B_1 : PIN_MOT_CONTROL_A_1;
+    PORTD.OUTSET = (motA.direction ? PIN_MOT_CONTROL_A_1 : PIN_MOT_CONTROL_B_1);
+    PORTD.OUTCLR = (motA.direction ? PIN_MOT_CONTROL_B_1 : PIN_MOT_CONTROL_A_1);
     
     /* Set the Direction for motB */
-    PORTD.OUTSET = (motA.direction) ? PIN_MOT_CONTROL_A_2 : PIN_MOT_CONTROL_B_2;
-    PORTD.OUTCLR = (motA.direction) ? PIN_MOT_CONTROL_B_2 : PIN_MOT_CONTROL_A_2;
-    
-    /*  */
-    /* if (motA.duty_count > motA.duty) */
-    /* { */
-    /*     PORTC.OUTSET = PIN_LED_MOT_A; */
-    /* } */
-    /* else */
-    /* { */
-    /*     PORTC.OUTCLR = PIN_LED_MOT_A; */
-    /* } */
-    /* if (motB.duty_count > motB.duty) */
-    /* { */
-    /*     PORTC.OUTSET = PIN_LED_MOT_B; */
-    /* } */
-    /* else */
-    /* { */
-    /*     PORTC.OUTCLR = PIN_LED_MOT_B; */
-    /* } */
+    PORTD.OUTSET = (motB.direction ? PIN_MOT_CONTROL_A_2 : PIN_MOT_CONTROL_B_2);
+    PORTD.OUTCLR = (motB.direction ? PIN_MOT_CONTROL_B_2 : PIN_MOT_CONTROL_A_2);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -361,32 +342,32 @@ int main(void)
 
     /* set up motors */
     init_motors();
-    
+
     /* enable interrupts - things start ticking now */
     sei();
 
-
+    /* Flash all the LEDs for two and a half seconds to make sure
+     * they're hooked up */
     led_orders.behavior = LED_BEHAVIOR_TIMED;
-    led_orders.time = 25000;
+    led_orders.time = 10000;
     led_error1.behavior = LED_BEHAVIOR_TIMED;
-    led_error1.time = 25000;
+    led_error1.time = 10000;
     led_error2.behavior = LED_BEHAVIOR_TIMED;
-    led_error2.time = 25000;
+    led_error2.time = 10000;
     led_mota.behavior = LED_BEHAVIOR_TIMED;
-    led_mota.time = 25000;
+    led_mota.time = 10000;
     led_motb.behavior = LED_BEHAVIOR_TIMED;
-    led_motb.time = 25000;
+    led_motb.time = 10000;
 
-    
-    /* PORTC.DIRSET = PIN_SDA_2 | PIN_SCL_2; */
-    /* PORTC.OUTSET = PIN_SDA_2; */
-    
+    motA.duty = 8000;
+    motA.direction = 1;
+    motB.duty = 8000;
+    motB.direction = 1;
 
     /* ============================== */
     /* main loop ==================== */
     /* ============================== */
     for(;;)
     {
-        /* PORTC.OUTTGL = PIN_SCL_2; */
     }
 }
