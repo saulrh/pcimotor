@@ -345,6 +345,8 @@ int main(void)
     /* ============================== */
     /* initialization =============== */
     /* ============================== */
+    
+    WDT_EnableAndSetTimeout(WDT_PER_512CLK_gc);
 
     /* set up LED pins */
     init_leds();
@@ -387,5 +389,7 @@ int main(void)
     /* ============================== */
     for(;;)
     {
+        _delay_us(10);
+        WDT_Reset();
     }
 }
