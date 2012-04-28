@@ -92,22 +92,29 @@ ISR(TWIC_TWIS_vect)
 
 void TWIC_SlaveProcessData(void)
 {
-    /* number of received bytes is in twiSlave.bytesReceived */
+    /* flash the LED so the user knows communication is happening */
+    led_orders->behavior = LED_BEHAVIOR_TIMED;
+    led_orders->time = 1250;
+
+    /* current byte being processed is in twiSlave.bytesReceived */
     /* data is in twiSlave.receivedData[] */
     /* can return data by setting twiSlave.sendData[] */
     /* theoretically, at least. I haven't figured everything out yet. */
 
-    /* to make sure things work: write back the bytes, inverted */
-    uint8_t bufIndex = twiSlave.bytesReceived;
-    twiSlave.sendData[bufIndex] = (~twiSlave.receivedData[bufIndex]);
-    /* twiSlave.sendData[bufIndex] = 0x55; */
+    /* write back the received byte, inverted */
+    twiSlave.sendData[twiSlave.bytesReceived] = (~twiSlave.receivedData[twiSlave.bytesReceived]);
 
 
-    /* uint8_t rec = twiSlave.receivedData[bufIndex]; */
-    /* twiSlave.sendData[bufIndex] = 0x55; */
-
-    led_orders.behavior = LED_BEHAVIOR_TIMED;
-    led_orders.time = 1250;
+    /* push results out over the digital pins */
+    digital_send_buf[0] = twiSlave.bytesReceived;
+    digital_send_buf[1] = 0xff;
+    for(int i = 0; i < twiSlave.bytesReceived; i += 2)
+    {
+        digital_send_buf[i+2] = twiSlave.receivedData[i] >> 4;
+        digital_send_buf[i+3] = twiSlave.receivedData[i];
+    }
+    digital_send_len = (twiSlave.bytesReceived*2) + 1;
+    digital_send_idx = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -196,16 +203,24 @@ ISR(TCC1_OVF_vect)
 ISR(TCD0_OVF_vect)
 {
     /* cli(); */
-    /* led_mota.behavior = LED_BEHAVIOR_TIMED; */
-    /* led_mota.time = 500; */
-    /* led_motb.behavior = LED_BEHAVIOR_TIMED; */
-    /* led_motb.time = 500; */
+    /* PORTA.OUTSET = PIN_DIGITAL_1; */
     
-    /* /\* Set motA duty cycle *\/ */
-    /* TCD0.CCA = motA.duty; */
+    /* led_mota->behavior = LED_BEHAVIOR_TIMED; */
+    /* led_mota->time = 2; */
+    /* led_motb->behavior = LED_BEHAVIOR_TIMED; */
+    /* led_motb->time = 2; */
     
-    /* /\* Set motB duty cycle *\/ */
-    /* TCD0.CCB = motB.duty; */
+    TCD0.CCABUF = 4000;
+    TCD0.CCBBUF = 8000;
+
+
+    /* /\* Set the clock to motA duty cycle *\/ */
+    /* TCD0.CCABUF = motA.duty; */
+    
+    /* /\* Set the clock to motB duty cycle *\/ */
+    /* TCD0.CCBBUF = motB.duty; */
+
+    /* PORTA.OUTCLR = PIN_DIGITAL_1; */
     /* sei(); */
 }
 
@@ -288,7 +303,20 @@ void init_leds(void)
     PORTC.DIRSET = PIN_LED_MOT_A | PIN_LED_MOT_B;
     PORTE.DIRSET = PIN_LED_ERROR_2;
 
-    led_power.behavior = LED_BEHAVIOR_ON;
+    led_power  = malloc(sizeof(led_t));
+    led_orders = malloc(sizeof(led_t));
+    led_error1 = malloc(sizeof(led_t));
+    led_error2 = malloc(sizeof(led_t));
+    led_mota   = malloc(sizeof(led_t));
+    led_motb   = malloc(sizeof(led_t));
+    memset(led_power  , 0, sizeof(led_t));
+    memset(led_orders , 0, sizeof(led_t));
+    memset(led_error1 , 0, sizeof(led_t));
+    memset(led_error1 , 0, sizeof(led_t));
+    memset(led_mota   , 0, sizeof(led_t));
+    memset(led_motb   , 0, sizeof(led_t));
+
+    led_power->behavior = LED_BEHAVIOR_ON;
 }
 
 uint8_t led_check_value(led_t* led)
@@ -299,9 +327,9 @@ uint8_t led_check_value(led_t* led)
         return false;
         break;
     case LED_BEHAVIOR_TIMED:
+        led->time--;
         if (led->time > 0)
         {
-            led->time--;
             return true;
         }
         else
@@ -363,26 +391,30 @@ int main(void)
     /* set up motors */
     init_motors();
 
-    /* enable interrupts - things start ticking now */
-    sei();
+    /* set up crude digital outputs */
+    init_digout();
 
     /* Flash all the LEDs for two and a half seconds to make sure
      * they're hooked up */
-    led_orders.behavior = LED_BEHAVIOR_TIMED;
-    led_orders.time = 1000;
-    led_error1.behavior = LED_BEHAVIOR_TIMED;
-    led_error1.time = 2000;
-    led_error2.behavior = LED_BEHAVIOR_TIMED;
-    led_error2.time = 4000;
-    led_mota.behavior = LED_BEHAVIOR_TIMED;
-    led_mota.time = 8000;
-    led_motb.behavior = LED_BEHAVIOR_TIMED;
-    led_motb.time = 16000;
+    led_orders->behavior = LED_BEHAVIOR_TIMED;
+    led_orders->time = 4000;
+    led_error1->behavior = LED_BEHAVIOR_TIMED;
+    led_error1->time = 6000;
+    led_error2->behavior = LED_BEHAVIOR_TIMED;
+    led_error2->time = 8000;
+    led_mota->behavior = LED_BEHAVIOR_TIMED;
+    led_mota->time = 10000;
+    led_motb->behavior = LED_BEHAVIOR_TIMED;
+    led_motb->time = 12000;
 
-    motA.duty = 8000;
-    motA.direction = 1;
-    motB.duty = 8000;
-    motB.direction = 1;
+    /* motA.duty = 4000; */
+    /* motA.direction = 1; */
+    /* motB.duty = 16000; */
+    /* motB.direction = 1; */
+
+    /* enable interrupts - things start ticking now */
+    sei();
+
 
     /* ============================== */
     /* main loop ==================== */
