@@ -48,10 +48,15 @@
 /////////////////////////////
 // private variables
 uint8_t twi_last_read = 0x00;
+uint8_t digital_send_buf[32];
+uint8_t digital_send_idx;
+uint8_t digital_send_len;
 
 /////////////////////////////
 // private functions
 uint8_t led_check_value(led_t*);
+void init_digout(void);
+void do_digout(void);
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -193,11 +198,16 @@ void init_clock(void)
 /* use this for control loop */
 ISR(TCC1_OVF_vect)
 {
-    cli();
+    /* cli(); */
+    /* PORTB.OUTSET = PIN_DIGITAL_4; */
+
     do_leds();
-    /* do_sensors(); */
-    /* do_motors(); */
-    sei();
+    do_sensors();
+    do_motors();
+    do_digout();
+
+    /* PORTB.OUTCLR = PIN_DIGITAL_4; */
+    /* sei(); */
 }
 
 ISR(TCD0_OVF_vect)
@@ -347,13 +357,59 @@ uint8_t led_check_value(led_t* led)
 
 void do_leds(void)
 {
-    PORTA.OUT = (PORTA.OUT & ~PIN_LED_POWER) | (led_check_value(&led_power) ? PIN_LED_POWER : 0);
-    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ORDERS) | (led_check_value(&led_orders) ? PIN_LED_ORDERS : 0);
-    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ERROR_1) | (led_check_value(&led_error1) ? PIN_LED_ERROR_1 : 0);
-    PORTE.OUT = (PORTE.OUT & ~PIN_LED_ERROR_2) | (led_check_value(&led_error2) ? PIN_LED_ERROR_2 : 0);
-    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_A) | (led_check_value(&led_mota) ? PIN_LED_MOT_A : 0);
-    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_B) | (led_check_value(&led_motb) ? PIN_LED_MOT_B : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_POWER)   | (led_check_value(led_power)  ? PIN_LED_POWER   : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ORDERS)  | (led_check_value(led_orders) ? PIN_LED_ORDERS  : 0);
+    PORTA.OUT = (PORTA.OUT & ~PIN_LED_ERROR_1) | (led_check_value(led_error1) ? PIN_LED_ERROR_1 : 0);
+    PORTE.OUT = (PORTE.OUT & ~PIN_LED_ERROR_2) | (led_check_value(led_error2) ? PIN_LED_ERROR_2 : 0);
+    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_A)   | (led_check_value(led_mota)   ? PIN_LED_MOT_A   : 0);
+    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_B)   | (led_check_value(led_motb)   ? PIN_LED_MOT_B   : 0);
 }
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/// Digital output
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void do_digout(void)
+{
+    if (digital_send_idx == digital_send_len)
+    {
+        led_error1->behavior = LED_BEHAVIOR_OFF;
+
+        digital_send_len = 0;
+        digital_send_idx = 0;
+        memset(digital_send_buf, 0, 32 * sizeof(uint8_t));
+        PORTA.OUTCLR = PIN_DIGITAL_1;
+        PORTB.OUTCLR = PIN_DIGITAL_2;
+        PORTC.OUTCLR = PIN_DIGITAL_3;
+        PORTE.OUTCLR = PIN_DIGITAL_4;
+    }
+
+    if (digital_send_idx < digital_send_len)
+    {
+        led_error1->behavior = LED_BEHAVIOR_ON;
+        
+        uint8_t cur = digital_send_buf[digital_send_idx];
+        PORTA.OUT = (PORTA.OUT & ~PIN_DIGITAL_1) | ((cur & (1<<0)) ? PIN_DIGITAL_1 : 0);
+        PORTB.OUT = (PORTB.OUT & ~PIN_DIGITAL_2) | ((cur & (1<<1)) ? PIN_DIGITAL_2 : 0);
+        PORTC.OUT = (PORTC.OUT & ~PIN_DIGITAL_3) | ((cur & (1<<2)) ? PIN_DIGITAL_3 : 0);
+        PORTE.OUT = (PORTE.OUT & ~PIN_DIGITAL_4) | ((cur & (1<<3)) ? PIN_DIGITAL_4 : 0);
+    
+        digital_send_idx++;
+    }
+}
+
+void init_digout(void)
+{
+    PORTA.DIRSET |= PIN_DIGITAL_1;
+    PORTB.DIRSET |= PIN_DIGITAL_2;
+    PORTC.DIRSET |= PIN_DIGITAL_3;
+    PORTE.DIRSET |= PIN_DIGITAL_4;
+    digital_send_len = 0;
+    digital_send_idx = 0;
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
