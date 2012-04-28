@@ -141,12 +141,12 @@ typedef struct {
  * in the ISR for clock 1, which ticks at 10kHz, so the default is
  * that the led will light for .time/10 milliseconds. */
 
-led_t led_power;
-led_t led_orders;
-led_t led_error1;
-led_t led_error2;
-led_t led_mota;
-led_t led_motb;
+led_t* led_power;
+led_t* led_orders;
+led_t* led_error1;
+led_t* led_error2;
+led_t* led_mota;
+led_t* led_motb;
 
 sensorfunc sensor_functions[16];
 
