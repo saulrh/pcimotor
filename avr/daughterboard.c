@@ -24,11 +24,13 @@
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <string.h>
 /* #include <avr/sleep.h> */
 
 #include "avr_compiler.h"
 #include "clksys/clksys_driver.h"
 #include "twi/twi_slave_driver.h"
+#include "watchdog/wdt_driver.h"
 #include "daughterboard.h"
 
 /////////////////////////////////////////////////////////////////////////
