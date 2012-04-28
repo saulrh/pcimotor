@@ -45,13 +45,13 @@
 /* port B pins */
 #define PIN_ANALOG_2 PIN0_bm
 #define PIN_ANALOG_4 PIN1_bm
-#define PIN_DIGITAL_4 PIN2_bm
+#define PIN_DIGITAL_2 PIN2_bm
 #define PIN_ANALOG_6 PIN3_bm
 
 /* port C pins */
 #define PIN_SDA_2 PIN0_bm
 #define PIN_SCL_2 PIN1_bm
-#define PIN_DIGITAL_5 PIN2_bm
+#define PIN_DIGITAL_3 PIN2_bm
 #define PIN_LED_MOT_A PIN3_bm
 #define PIN_LED_MOT_B PIN4_bm
 #define PIN_SWITCH_5 PIN5_bm
@@ -71,7 +71,7 @@
 /* port E pins */
 #define PIN_SDA_1 PIN0_bm
 #define PIN_SCL_1 PIN1_bm
-#define PIN_DIGITAL_6 PIN2_bm
+#define PIN_DIGITAL_4 PIN2_bm
 #define PIN_LED_ERROR_2 PIN3_bm
 
 /* port R pins */
