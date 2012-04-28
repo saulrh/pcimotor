@@ -130,7 +130,7 @@ void TWIC_SlaveProcessData(void)
 
 void init_clock(void)
 {
-    /////////////////////////////
+    //////////////////////////////////////////////////////////
     /* system clock setup */
 
     /* start the 32MHz ring oscillator ticking */
@@ -143,8 +143,9 @@ void init_clock(void)
 
     /* enable mid-priority interrupts */
     PMIC.CTRL |= PMIC_MEDLVLEN_bm;
+    PMIC.CTRL |= PMIC_LOLVLEN_bm;
 
-    /////////////////////////////
+    //////////////////////////////////////////////////////////
     /* clock 1 setup */
     /* we use clock 1 for control loops because the avr-gcc headers
      * only have the registers for PWMing TC0 */
@@ -161,34 +162,31 @@ void init_clock(void)
     /* we use this for handling control loops */
     TCC1.PER = 1600;
 
-    /////////////////////////////
+    //////////////////////////////////////////////////////////
     /* clock 0 setup */
+    
+    TCD0.CTRLB = 0x00;
 
-    /* medium-priority interrupt */
-    TCD0.INTCTRLA = (TCD0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
-
-    /* /\* single-slope PWM *\/ */
-    /* TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc; */
+    /* low-priority interrupt */
+    TCD0.INTCTRLA = (TCD0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_LO_gc;
 
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
-    TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV64_gc;
+    TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
 
     /* count to 16000 before looping. */
     /* ticks at 1kHz */
     /* we use its A and B comparators for motor PWM */
-    TCD0.PER = 50000;
-    TCD0.CTRLB |= TC0_CCAEN_bm; /* CCA is for motA */
-    TCD0.CTRLB |= TC0_CCBEN_bm; /* CCB is for motB */
-    TCD0.CCA = 8000;
-    TCD0.CCB = 8000;
+    TCD0.PER = 16000;
 
+    /* single-slope PWM with both CCA and CCB enabled */
+    TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc | TC0_CCAEN_bm | TC0_CCBEN_bm;
 
-    /////////////////////////////
+    //////////////////////////////////////////////////////////
     /* start things ticking */
 
-    /* now we wait until the 32MHz oscillator is stable */
-    do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
+    /* wait until the 32MHz oscillator is stable */
+    do {nop();} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
     /* and select it */
     CLKSYS_Main_ClockSource_Select(CLK_SCLKSEL_RC32M_gc);
 }
