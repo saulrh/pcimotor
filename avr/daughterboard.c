@@ -162,8 +162,6 @@ void init_clock(void)
     TCD0.CTRLB |= TC0_CCBEN_bm;
     TCD0.CCA = 0;
     TCD0.CCB = 0;
-    
-    //Added by Chris
  
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
@@ -214,9 +212,11 @@ void init_motors(void)
     /* enable motors */
     PORTC.DIRSET |= PIN_LED_MOT_A | PIN_LED_MOT_B;
 
-    /* PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN_2; */
+    PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN_2;
     /* PORTD.OUTSET  = PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN2; */
-    
+    PORTD.DIRSET |= PIN_MOT_CONTROL_A_2|PIN_MOT_CONTROL_B_2;
+    PORTD.DIRSET |= PIN_MOT_CONTROL_A_1|PIN_MOT_CONTROL_B_1;
+
     motA.duty = 0;
     motA.sensorchan = 0; 
     motA.closed = false;
@@ -242,8 +242,24 @@ void init_motors(void)
 /* Called by clock 1 at 100kHz */
 void do_motors(void)
 {
-    /* motA.duty_count = (motA.duty_count+1) % MOTOR_PRECISION; */
-    /* motB.duty_count = (motB.duty_count+1) % MOTOR_PRECISION; */
+    motA.duty_count = (motA.duty_count+1) % MOTOR_PRECISION; 
+    motB.duty_count = (motB.duty_count+1) % MOTOR_PRECISION;
+    
+    /* Set motA duty cycle */
+    TCD0.CCA = motA.duty;
+    
+    /* Set motB duty cycle */
+    TCD0.CCB = motB.duty;
+    
+    /* Set the Direction for motA */
+    PORTD.OUTSET = (motA.direction) ? PIN_MOT_CONTROL_A_1 : PIN_MOT_CONTROL_B_1;
+    PORTD.OUTCLR = (motA.direction) ? PIN_MOT_CONTROL_B_1 : PIN_MOT_CONTROL_A_1;
+    
+    /* Set the Direction for motB */
+    PORTD.OUTSET = (motA.direction) ? PIN_MOT_CONTROL_A_2 : PIN_MOT_CONTROL_B_2;
+    PORTD.OUTCLR = (motA.direction) ? PIN_MOT_CONTROL_B_2 : PIN_MOT_CONTROL_A_2;
+    
+    /*  */
     /* if (motA.duty_count > motA.duty) */
     /* { */
     /*     PORTC.OUTSET = PIN_LED_MOT_A; */
