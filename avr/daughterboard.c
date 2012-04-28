@@ -116,6 +116,9 @@ void TWIC_SlaveProcessData(void)
 
 void init_clock(void)
 {
+    /////////////////////////////
+    /* system clock setup */
+
     /* start the 32MHz ring oscillator ticking */
     /* ticks at 32MHz */
     CLKSYS_Enable(OSC_RC32MEN_bm);
@@ -124,16 +127,16 @@ void init_clock(void)
     /* ticks at 32MHz */
     CLKSYS_Prescalers_Config(CLK_PSADIV_1_gc, CLK_PSBCDIV_1_1_gc);
 
+    /* enable mid-priority interrupts */
+    PMIC.CTRL |= PMIC_MEDLVLEN_bm;
+
     /////////////////////////////
-    /* clock 1 */
+    /* clock 1 setup */
     /* we use clock 1 for control loops because the avr-gcc headers
      * only have the registers for PWMing TC0 */
 
     /* medium-priority interrupt */
     TCC1.INTCTRLA = (TCC1.INTCTRLA & ~TC1_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
-
-    /* enable mid-priority interrupts */
-    PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
@@ -145,24 +148,31 @@ void init_clock(void)
     TCC1.PER = 1600;
 
     /////////////////////////////
-    /* clock 0 */
+    /* clock 0 setup */
 
-    /* single-slope PWM */
-    TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc;
+    /* medium-priority interrupt */
+    TCD0.INTCTRLA = (TCD0.INTCTRLA & ~TC0_OVFINTLVL_gm) | TC_OVFINTLVL_MED_gc;
+
+    /* /\* single-slope PWM *\/ */
+    /* TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc; */
 
     /* divide main clock source by 2 */
     /* ticks at 16MHz */
-    TCD0.CTRLB = (TCD0.CTRLB & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
+    TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV64_gc;
 
     /* count to 16000 before looping. */
     /* ticks at 1kHz */
     /* we use its A and B comparators for motor PWM */
-    TCD0.PER = 16000;
+    TCD0.PER = 50000;
     TCD0.CTRLB |= TC0_CCAEN_bm; /* CCA is for motA */
     TCD0.CTRLB |= TC0_CCBEN_bm; /* CCB is for motB */
-    TCD0.CCA = 16000;
-    TCD0.CCB = 16000;
- 
+    TCD0.CCA = 8000;
+    TCD0.CCB = 8000;
+
+
+    /////////////////////////////
+    /* start things ticking */
+
     /* now we wait until the 32MHz oscillator is stable */
     do {} while (CLKSYS_IsReady(OSC_RC32MRDY_bm) == 0);
     /* and select it */
@@ -174,13 +184,27 @@ void init_clock(void)
 /* use this for control loop */
 ISR(TCC1_OVF_vect)
 {
+    cli();
     do_leds();
-    do_sensors();
-    do_motors();
+    /* do_sensors(); */
+    /* do_motors(); */
+    sei();
 }
 
 ISR(TCD0_OVF_vect)
 {
+    /* cli(); */
+    /* led_mota.behavior = LED_BEHAVIOR_TIMED; */
+    /* led_mota.time = 500; */
+    /* led_motb.behavior = LED_BEHAVIOR_TIMED; */
+    /* led_motb.time = 500; */
+    
+    /* /\* Set motA duty cycle *\/ */
+    /* TCD0.CCA = motA.duty; */
+    
+    /* /\* Set motB duty cycle *\/ */
+    /* TCD0.CCB = motB.duty; */
+    /* sei(); */
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -207,9 +231,6 @@ void do_sensors(void)
 
 void init_motors(void)
 {
-    /* enable motor led pins */
-    PORTC.DIRSET |= PIN_LED_MOT_A | PIN_LED_MOT_B;
-
     /* enable motor pins */
     PORTD.DIRSET |= PIN_MOT_CONTROL_EN_1|PIN_MOT_CONTROL_EN_2;
     PORTD.DIRSET |= PIN_MOT_CONTROL_A_2|PIN_MOT_CONTROL_B_2;
@@ -244,12 +265,6 @@ void init_motors(void)
 /* Called by clock 1 at 100kHz */
 void do_motors(void)
 {
-    /* Set motA duty cycle */
-    TCD0.CCA = motA.duty;
-    
-    /* Set motB duty cycle */
-    TCD0.CCB = motB.duty;
-
     /* Set the Direction for motA */
     PORTD.OUTSET = (motA.direction ? PIN_MOT_CONTROL_A_1 : PIN_MOT_CONTROL_B_1);
     PORTD.OUTCLR = (motA.direction ? PIN_MOT_CONTROL_B_1 : PIN_MOT_CONTROL_A_1);
@@ -278,9 +293,6 @@ uint8_t led_check_value(led_t* led)
 {
     switch (led->behavior)
     {
-    case LED_BEHAVIOR_ON:
-        return true;
-        break;
     case LED_BEHAVIOR_OFF:
         return false;
         break;
@@ -295,6 +307,10 @@ uint8_t led_check_value(led_t* led)
             led->behavior = LED_BEHAVIOR_OFF;
         }
         break;
+    case LED_BEHAVIOR_ON:
+    default:
+        return true;
+        break;
     }
     return false;
 }
@@ -305,8 +321,8 @@ void do_leds(void)
     PORTA.OUT = (PORTA.OUT & ~PIN_LED_ORDERS) | (led_check_value(&led_orders) ? PIN_LED_ORDERS : 0);
     PORTA.OUT = (PORTA.OUT & ~PIN_LED_ERROR_1) | (led_check_value(&led_error1) ? PIN_LED_ERROR_1 : 0);
     PORTE.OUT = (PORTE.OUT & ~PIN_LED_ERROR_2) | (led_check_value(&led_error2) ? PIN_LED_ERROR_2 : 0);
-    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_A) | (led_check_value(&led_motb) ? PIN_LED_MOT_A : 0);
-    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_B) | (led_check_value(&led_mota) ? PIN_LED_MOT_B : 0);
+    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_A) | (led_check_value(&led_mota) ? PIN_LED_MOT_A : 0);
+    PORTC.OUT = (PORTC.OUT & ~PIN_LED_MOT_B) | (led_check_value(&led_motb) ? PIN_LED_MOT_B : 0);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -349,15 +365,15 @@ int main(void)
     /* Flash all the LEDs for two and a half seconds to make sure
      * they're hooked up */
     led_orders.behavior = LED_BEHAVIOR_TIMED;
-    led_orders.time = 10000;
+    led_orders.time = 1000;
     led_error1.behavior = LED_BEHAVIOR_TIMED;
-    led_error1.time = 10000;
+    led_error1.time = 2000;
     led_error2.behavior = LED_BEHAVIOR_TIMED;
-    led_error2.time = 10000;
+    led_error2.time = 4000;
     led_mota.behavior = LED_BEHAVIOR_TIMED;
-    led_mota.time = 10000;
+    led_mota.time = 8000;
     led_motb.behavior = LED_BEHAVIOR_TIMED;
-    led_motb.time = 10000;
+    led_motb.time = 16000;
 
     motA.duty = 8000;
     motA.direction = 1;
