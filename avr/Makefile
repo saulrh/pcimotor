@@ -44,6 +44,7 @@ SRC = $(TARGET).c
 SRC += clksys/clksys_driver.c
 SRC += twi/twi_master_driver.c
 SRC += twi/twi_slave_driver.c
+SRC += watchdog/wdt_driver.c
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
