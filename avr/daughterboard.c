@@ -48,7 +48,7 @@
 /////////////////////////////
 // private variables
 uint8_t twi_last_read = 0x00;
-uint8_t digital_send_buf[32];
+uint8_t digital_send_buf[0xff];
 uint8_t digital_send_idx;
 uint8_t digital_send_len;
 
