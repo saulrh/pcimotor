@@ -169,7 +169,7 @@ void init_clock(void)
     /* count to 65536 before looping. */
     /* ticks at about 250Hz */
     /* we use its A and B comparators for motor PWM */
-    TCD0.PER = 0xff;
+    TCD0.PER = 0xffff;
 
     /* single-slope PWM with both CCA and CCB enabled */
     TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc | TC0_CCAEN_bm | TC0_CCBEN_bm;
