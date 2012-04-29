@@ -196,40 +196,19 @@ void init_clock(void)
 /* use this for control loop */
 ISR(TCC1_OVF_vect)
 {
-    /* cli(); */
-    /* PORTB.OUTSET = PIN_DIGITAL_4; */
-
     do_leds();
     do_sensors();
     do_motors();
     do_digout();
-
-    /* PORTB.OUTCLR = PIN_DIGITAL_4; */
-    /* sei(); */
 }
 
 ISR(TCD0_OVF_vect)
 {
-    /* cli(); */
-    /* PORTA.OUTSET = PIN_DIGITAL_1; */
+    /* Set the clock to motA duty cycle */
+    TCD0.CCABUF = motA.duty;
     
-    /* led_mota->behavior = LED_BEHAVIOR_TIMED; */
-    /* led_mota->time = 2; */
-    /* led_motb->behavior = LED_BEHAVIOR_TIMED; */
-    /* led_motb->time = 2; */
-    
-    TCD0.CCABUF = 4000;
-    TCD0.CCBBUF = 8000;
-
-
-    /* /\* Set the clock to motA duty cycle *\/ */
-    /* TCD0.CCABUF = motA.duty; */
-    
-    /* /\* Set the clock to motB duty cycle *\/ */
-    /* TCD0.CCBBUF = motB.duty; */
-
-    /* PORTA.OUTCLR = PIN_DIGITAL_1; */
-    /* sei(); */
+    /* Set the clock to motB duty cycle */
+    TCD0.CCBBUF = motB.duty;
 }
 
 /////////////////////////////////////////////////////////////////////////
