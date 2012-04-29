@@ -371,7 +371,7 @@ void do_leds(void)
 
 void do_digout(void)
 {
-    if (digital_send_idx == digital_send_len)
+    if ((digital_send_idx == digital_send_len) && (digital_send_len != 0))
     {
         led_error1->behavior = LED_BEHAVIOR_OFF;
 
