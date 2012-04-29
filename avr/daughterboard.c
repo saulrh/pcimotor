@@ -72,10 +72,10 @@ TWI_Slave_t twiSlave;            /* TWI slave module. */
 
 void init_twi(void)
 {
-    /* make sure our I2C pins are set to input */
-    PORTC.DIRCLR = PIN_SDA_2 | PIN_SCL_2;
+    /* /\* make sure our I2C pins are set to input *\/ */
+    /* PORTC.DIRCLR = PIN_SDA_2 | PIN_SCL_2; */
 
-    /* set them to use internal pullup resistors */
+    /* set the i2c pins to use internal pullup resistors */
     PORTCFG.MPCMASK = PIN_SDA_2 | PIN_SCL_2;
     PORTC.PIN0CTRL = (PORTC.PIN0CTRL & ~PORT_OPC_gm) | PORT_OPC_PULLUP_gc;
     PORTCFG.MPCMASK = 0x00;
