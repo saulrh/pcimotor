@@ -111,7 +111,7 @@ void TWIC_SlaveProcessData(void)
     digital_send_idx = 0;
 
     /* set motor A duty cycle to whatever it was we got */
-    motA.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
+    motB.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
 }
 
 /////////////////////////////////////////////////////////////////////////
