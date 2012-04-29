@@ -101,13 +101,7 @@ void TWIC_SlaveProcessData(void)
     led_orders->behavior = LED_BEHAVIOR_TIMED;
     led_orders->time = 1250;
 
-    /* /\* write back the received byte, inverted *\/ */
-    /* twiSlave.sendData[twiSlave.bytesReceived] = (~twiSlave.receivedData[twiSlave.bytesReceived]); */
-
-    /* for(int i = 0; i < TWIS_SEND_BUFFER_SIZE; i++) */
-    /*     twiSlave.sendData[i] = 0x55; */
-
-    /* push results out over the digital pins */
+    /* push results out over the digital pins for debug */
     digital_send_buf[0] = twiSlave.bytesReceived+1;
     for(int i = 0; i <= twiSlave.bytesReceived; i++)
     {
