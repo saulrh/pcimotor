@@ -65,7 +65,7 @@ void do_digout(void);
 /////////////////////////////////////////////////////////////////////////
 
 #define SLAVE_ADDRESS 0x55
-#define BAUDRATE 100000
+#define BAUDRATE 5000
 #define TWI_BAUDSETTING TWI_BAUD(F_CPU, BAUDRATE)
 
 TWI_Slave_t twiSlave;            /* TWI slave module. */
