@@ -110,11 +110,8 @@ void TWIC_SlaveProcessData(void)
     digital_send_len = twiSlave.bytesReceived+1 + 1;
     digital_send_idx = 0;
 
-
-    /* for (int i = 0; i < 0xff; i++) */
-    /*     digital_send_buf[i] = i; */
-    /* digital_send_len = 0xff; */
-    /* digital_send_idx = 0; */
+    /* set motor A duty cycle to whatever it was we got */
+    motA.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -169,10 +166,10 @@ void init_clock(void)
     /* ticks at 16MHz */
     TCD0.CTRLA = (TCD0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV2_gc;
 
-    /* count to 16000 before looping. */
-    /* ticks at 1kHz */
+    /* count to 65536 before looping. */
+    /* ticks at about 250Hz */
     /* we use its A and B comparators for motor PWM */
-    TCD0.PER = 16000;
+    TCD0.PER = 0xff;
 
     /* single-slope PWM with both CCA and CCB enabled */
     TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc | TC0_CCAEN_bm | TC0_CCBEN_bm;
