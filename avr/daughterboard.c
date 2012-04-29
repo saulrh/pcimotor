@@ -382,6 +382,10 @@ void do_digout(void)
         PORTB.OUTCLR = PIN_DIGITAL_2;
         PORTC.OUTCLR = PIN_DIGITAL_3;
         PORTE.OUTCLR = PIN_DIGITAL_4;
+        PORTA.OUTCLR = PIN_ANALOG_1;
+        PORTB.OUTCLR = PIN_ANALOG_2;
+        PORTA.OUTCLR = PIN_ANALOG_3;
+        PORTB.OUTCLR = PIN_ANALOG_4;
     }
 
     if (digital_send_idx < digital_send_len)
@@ -393,6 +397,10 @@ void do_digout(void)
         PORTB.OUT = (PORTB.OUT & ~PIN_DIGITAL_2) | ((cur & (1<<1)) ? PIN_DIGITAL_2 : 0);
         PORTC.OUT = (PORTC.OUT & ~PIN_DIGITAL_3) | ((cur & (1<<2)) ? PIN_DIGITAL_3 : 0);
         PORTE.OUT = (PORTE.OUT & ~PIN_DIGITAL_4) | ((cur & (1<<3)) ? PIN_DIGITAL_4 : 0);
+        PORTA.OUT = (PORTA.OUT & ~PIN_ANALOG_1)  | ((cur & (1<<4)) ? PIN_ANALOG_1  : 0);
+        PORTB.OUT = (PORTB.OUT & ~PIN_ANALOG_2)  | ((cur & (1<<5)) ? PIN_ANALOG_2  : 0);
+        PORTA.OUT = (PORTA.OUT & ~PIN_ANALOG_3)  | ((cur & (1<<6)) ? PIN_ANALOG_3  : 0);
+        PORTB.OUT = (PORTB.OUT & ~PIN_ANALOG_4)  | ((cur & (1<<7)) ? PIN_ANALOG_4  : 0);
     
         digital_send_idx++;
     }
@@ -400,8 +408,8 @@ void do_digout(void)
 
 void init_digout(void)
 {
-    PORTA.DIRSET |= PIN_DIGITAL_1;
-    PORTB.DIRSET |= PIN_DIGITAL_2;
+    PORTA.DIRSET |= PIN_DIGITAL_1 | PIN_ANALOG_1 | PIN_ANALOG_3;
+    PORTB.DIRSET |= PIN_DIGITAL_2 | PIN_ANALOG_2 | PIN_ANALOG_4;
     PORTC.DIRSET |= PIN_DIGITAL_3;
     PORTE.DIRSET |= PIN_DIGITAL_4;
     digital_send_len = 0;
