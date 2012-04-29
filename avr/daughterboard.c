@@ -101,25 +101,26 @@ void TWIC_SlaveProcessData(void)
     led_orders->behavior = LED_BEHAVIOR_TIMED;
     led_orders->time = 1250;
 
-    /* current byte being processed is in twiSlave.bytesReceived */
-    /* data is in twiSlave.receivedData[] */
-    /* can return data by setting twiSlave.sendData[] */
-    /* theoretically, at least. I haven't figured everything out yet. */
+    /* /\* write back the received byte, inverted *\/ */
+    /* twiSlave.sendData[twiSlave.bytesReceived] = (~twiSlave.receivedData[twiSlave.bytesReceived]); */
 
-    /* write back the received byte, inverted */
-    twiSlave.sendData[twiSlave.bytesReceived] = (~twiSlave.receivedData[twiSlave.bytesReceived]);
-
+    /* for(int i = 0; i < TWIS_SEND_BUFFER_SIZE; i++) */
+    /*     twiSlave.sendData[i] = 0x55; */
 
     /* push results out over the digital pins */
-    digital_send_buf[0] = twiSlave.bytesReceived;
-    digital_send_buf[1] = 0xff;
-    for(int i = 0; i < twiSlave.bytesReceived; i += 2)
+    digital_send_buf[0] = twiSlave.bytesReceived+1;
+    for(int i = 0; i <= twiSlave.bytesReceived; i++)
     {
-        digital_send_buf[i+2] = twiSlave.receivedData[i] >> 4;
-        digital_send_buf[i+3] = twiSlave.receivedData[i];
+        digital_send_buf[i+1] = twiSlave.receivedData[i];
     }
-    digital_send_len = (twiSlave.bytesReceived*2) + 1;
+    digital_send_len = twiSlave.bytesReceived+1 + 1;
     digital_send_idx = 0;
+
+
+    /* for (int i = 0; i < 0xff; i++) */
+    /*     digital_send_buf[i] = i; */
+    /* digital_send_len = 0xff; */
+    /* digital_send_idx = 0; */
 }
 
 /////////////////////////////////////////////////////////////////////////
