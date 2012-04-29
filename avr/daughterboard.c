@@ -261,6 +261,12 @@ void init_motors(void)
 /* Called by clock 1 at 100kHz */
 void do_motors(void)
 {
+    if (motA.duty) led_mota->behavior = LED_BEHAVIOR_ON;
+    else led_mota->behavior = LED_BEHAVIOR_OFF;
+    if (motB.duty) led_motb->behavior = LED_BEHAVIOR_ON;
+    else led_motb->behavior = LED_BEHAVIOR_OFF;
+
+    
     /* Set the Direction for motA */
     PORTD.OUTSET = (motA.direction ? PIN_MOT_CONTROL_A_1 : PIN_MOT_CONTROL_B_1);
     PORTD.OUTCLR = (motA.direction ? PIN_MOT_CONTROL_B_1 : PIN_MOT_CONTROL_A_1);
