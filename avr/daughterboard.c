@@ -58,7 +58,8 @@ uint8_t digital_send_len;
 uint8_t led_check_value(led_t*);
 void init_digout(void);
 void do_digout(void);
-
+void TWIC_Decode();
+uint8_t TWIC_waitForData(int bytes);
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// TWI
@@ -98,10 +99,11 @@ ISR(TWIC_TWIS_vect)
 
 void TWIC_SlaveProcessData(void)
 {
-#ifdef SAULDECODE
-    /* flash the LED so the user knows communication is happening */
     led_orders->behavior = LED_BEHAVIOR_TIMED;
     led_orders->time = 1250;
+#ifdef SAULDECODE
+    /* flash the LED so the user knows communication is happening */
+
 
     /* push results out over the digital pins for debug */
     digital_send_buf[0] = twiSlave.bytesReceived+1;
@@ -109,16 +111,66 @@ void TWIC_SlaveProcessData(void)
     {
         digital_send_buf[i+1] = twiSlave.receivedData[i];
     }
-    digital_send_len = twiSlave.bytesReceived+1 + 1;
+digital_send_len = twiSlave.bytesReceived+1 + 1;
     digital_send_idx = 0;
 
     /* set motor A duty cycle to whatever it was we got */
     motB.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
+#else
+    TWIC_Decode();
 #endif
+
 }
 
 void TWIC_Decode()
+{
+    int command = twiSlave.receivedData[0];
+    
+    switch(command)
+    {
+        case I2C_CMD_STOP:
+        break;
+        case I2C_CMD_RESET:
+        break;
+        case I2C_CMD_PAUSE:
+        break;
+        case I2C_CMD_GO:
+        break;
+        
+        //Data in here
+        case I2C_CMD_SET_MOTOR_SENSOR_CHANNEL:
+        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_MOTOR_SENSOR_CHANNEL_BYTES);
+        break;
+        case I2C_CMD_SET_CONTROLLER_TARGET:
+        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_TARGET_BYTES);
+        break;
+        case I2C_CMD_SET_CONTROLLER_P:
+        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_P_BYTES);
+        break;
+        case I2C_CMD_SET_CONTROLLER_I:
+        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_I_BYTES);
+        break;
+        case I2C_CMD_SET_CONTROLLER_D: 
+        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_D_BYTES);
+        break;
+        
+        //Data out here
+        case I2C_CMD_GET_FIRMWARE_VERSION:
+        break;
+        case I2C_CMD_GET_MESSAGES:
+        break;
+    }
+}
 
+uint8_t *TWIC_waitForData(int bytes)
+{
+    while(twiSlave.bytesReceived<bytes)
+    {
+        _delay_us(10);
+    }
+    
+    return twiSlave.receivedData;
+}
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Clock

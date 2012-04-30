@@ -31,6 +31,7 @@ time to cleanly shut down sensors and other peripherals.*/
 //go
 //0x03 BB
 #define I2C_CMD_GO 0x03
+#define I2C_CMD_GO_BYTES 2
 /*Instructs the motor controller to run. The two bytes (16-bit int)
 specify a timeout - if the controller hasn't received an update within
 this many ticks of clock0 (default 10kHz), it will assume that the
@@ -46,7 +47,8 @@ six seconds. This is intentional.*/
 //--------------------------------------------------
 //set motor sensor channel
 //0x10 B
-#define I2C_CMD_GO 0x10
+#define I2C_CMD_SET_MOTOR_SENSOR_CHANNEL 0x10
+#define I2C_CMD_SET_MOTOR_SENSOR_CHANNEL_BYTES 1
 /*A sensor input comes in from either the analog or digital ports ports
 on the input headers. Write your own function and hook it in, or
 modify one of the ones provided for convenience.
@@ -75,8 +77,9 @@ controller.*/
 
 //--------------------------------------------------
 //set controller target
-//0x20 BBBBBBBB
+//0x20 B BBBBBBBB
 #define I2C_CMD_SET_CONTROLLER_TARGET 0x20
+#define I2C_CMD_SET_CONTROLLER_TARGET_BYTES 9
 /*Set the controller's target value. It's a 64-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
@@ -85,8 +88,9 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller P
-//0x21 BBBBBBBB
+//0x21 B BBBBBBBB
 #define I2C_CMD_SET_CONTROLLER_P 0x21
+#define I2C_CMD_SET_CONTROLLER_P_BYTES 9
 /*Set the controller's proportional constant. It's a 64-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
@@ -95,8 +99,9 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller I
-//0x22 BBBBBBBB
+//0x22 B BBBBBBBB
 #define I2C_CMD_SET_CONTROLLER_I 0x22
+#define I2C_CMD_SET_CONTROLLER_I_BYTES 9
 /*Set the controller's integral constant. It's a 64-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
@@ -105,8 +110,9 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller D
-//0x23 BBBBBBBB
+//0x23 B BBBBBBBB
 #define I2C_CMD_SET_CONTROLLER_D 0x23
+#define I2C_CMD_SET_CONTROLLER_D_BYTES 9
 /*Set the controller's derivative constant. It's a 64-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
