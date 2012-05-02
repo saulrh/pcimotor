@@ -39,7 +39,10 @@
 /// Defines
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-//#define SAULDECODE
+#define SAULDECODE
+
+#define PWM_PERIOD 0xffff
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// Declarations
@@ -58,8 +61,8 @@ uint8_t digital_send_len;
 uint8_t led_check_value(led_t*);
 void init_digout(void);
 void do_digout(void);
-void TWIC_Decode();
-uint8_t TWIC_waitForData(int bytes);
+void TWIC_Decode(void);
+register8_t* TWIC_waitForData(int);
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /// TWI
@@ -111,11 +114,19 @@ void TWIC_SlaveProcessData(void)
     {
         digital_send_buf[i+1] = twiSlave.receivedData[i];
     }
-digital_send_len = twiSlave.bytesReceived+1 + 1;
+    digital_send_len = twiSlave.bytesReceived+1 + 1;
     digital_send_idx = 0;
 
-    /* set motor A duty cycle to whatever it was we got */
-    motB.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
+    if(twiSlave.bytesReceived == 0)
+    {
+        /* set motor A duty cycle to whatever it was we got */
+        motA.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
+    }
+    else
+    {
+        /* set motor B duty cycle to whatever it was we got */
+        motB.duty = twiSlave.receivedData[twiSlave.bytesReceived] << 8;
+    }
 #else
     TWIC_Decode();
 #endif
@@ -125,49 +136,64 @@ digital_send_len = twiSlave.bytesReceived+1 + 1;
 void TWIC_Decode()
 {
     int command = twiSlave.receivedData[0];
-    
+    register8_t* data;
+    motor_channel_t* mot;
+
     switch(command)
     {
-        case I2C_CMD_STOP:
+    case I2C_CMD_STOP:
         break;
-        case I2C_CMD_RESET:
+    case I2C_CMD_RESET:
         break;
-        case I2C_CMD_PAUSE:
+    case I2C_CMD_PAUSE:
         break;
-        case I2C_CMD_GO:
+    case I2C_CMD_GO:
         break;
         
         //Data in here
-        case I2C_CMD_SET_MOTOR_SENSOR_CHANNEL:
-        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_MOTOR_SENSOR_CHANNEL_BYTES);
+    case I2C_CMD_SET_MOTOR_SENSOR_CHANNEL:
+        data = TWIC_waitForData(I2C_CMD_SET_MOTOR_SENSOR_CHANNEL_BYTES);
+        if (data == 0)
+            return;
+        mot = (twiSlave.receivedData[1] & (1<<7)) ? &motB : &motA;
+        mot->closed = !!(twiSlave.receivedData[1] & (1 << 6));
         break;
-        case I2C_CMD_SET_CONTROLLER_TARGET:
-        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_TARGET_BYTES);
+    case I2C_CMD_SET_CONTROLLER_TARGET:
+        data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_TARGET_BYTES);
+        if (data == 0)
+            return;
+        
+        /* TODO: does not follow spec right now */
+        
         break;
-        case I2C_CMD_SET_CONTROLLER_P:
-        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_P_BYTES);
+    case I2C_CMD_SET_CONTROLLER_P:
+        data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_P_BYTES);
+        if (data == 0)
+            return;
         break;
-        case I2C_CMD_SET_CONTROLLER_I:
-        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_I_BYTES);
+    case I2C_CMD_SET_CONTROLLER_I:
+        data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_I_BYTES);
+        if (data == 0)
+            return;
         break;
-        case I2C_CMD_SET_CONTROLLER_D: 
-        uint8_t * data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_D_BYTES);
+    case I2C_CMD_SET_CONTROLLER_D: 
+        data = TWIC_waitForData(I2C_CMD_SET_CONTROLLER_D_BYTES);
+        if (data == 0)
+            return;
         break;
         
         //Data out here
-        case I2C_CMD_GET_FIRMWARE_VERSION:
+    case I2C_CMD_GET_FIRMWARE_VERSION:
         break;
-        case I2C_CMD_GET_MESSAGES:
+    case I2C_CMD_GET_MESSAGES:
         break;
     }
 }
 
-uint8_t *TWIC_waitForData(int bytes)
+register8_t* TWIC_waitForData(int bytes)
 {
-    while(twiSlave.bytesReceived<bytes)
-    {
-        _delay_us(10);
-    }
+    if(twiSlave.bytesReceived!=bytes)
+        return (register8_t*)0;
     
     return twiSlave.receivedData;
 }
@@ -226,7 +252,7 @@ void init_clock(void)
     /* count to 65536 before looping. */
     /* ticks at about 250Hz */
     /* we use its A and B comparators for motor PWM */
-    TCD0.PER = 0xffff;
+    TCD0.PER = PWM_PERIOD;
 
     /* single-slope PWM with both CCA and CCB enabled */
     TCD0.CTRLB = (TCD0.CTRLB & ~TC0_WGMODE_gm) | TC_WGMODE_SS_gc | TC0_CCAEN_bm | TC0_CCBEN_bm;
@@ -254,10 +280,10 @@ ISR(TCC1_OVF_vect)
 ISR(TCD0_OVF_vect)
 {
     /* Set the clock to motA duty cycle */
-    TCD0.CCABUF = motA.duty;
+    TCD0.CCABUF = PWM_PERIOD - motA.duty;
     
     /* Set the clock to motB duty cycle */
-    TCD0.CCBBUF = motB.duty;
+    TCD0.CCBBUF = PWM_PERIOD - motB.duty;
 }
 
 /////////////////////////////////////////////////////////////////////////
