@@ -77,10 +77,10 @@ controller.*/
 
 //--------------------------------------------------
 //set controller target
-//0x20 B BBBBBBBB
+//0x20 B BBBB
 #define I2C_CMD_SET_CONTROLLER_TARGET 0x20
-#define I2C_CMD_SET_CONTROLLER_TARGET_BYTES 9
-/*Set the controller's target value. It's a 64-bit float.
+#define I2C_CMD_SET_CONTROLLER_TARGET_BYTES 5
+/*Set the controller's target value. It's a 32-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
 lowest-order (least significant) byte and going to the highest-order
@@ -88,10 +88,10 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller P
-//0x21 B BBBBBBBB
+//0x21 B BBBB
 #define I2C_CMD_SET_CONTROLLER_P 0x21
-#define I2C_CMD_SET_CONTROLLER_P_BYTES 9
-/*Set the controller's proportional constant. It's a 64-bit float.
+#define I2C_CMD_SET_CONTROLLER_P_BYTES 5
+/*Set the controller's proportional constant. It's a 32-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
 lowest-order (least significant) byte and going to the highest-order
@@ -99,10 +99,10 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller I
-//0x22 B BBBBBBBB
+//0x22 B BBBB
 #define I2C_CMD_SET_CONTROLLER_I 0x22
-#define I2C_CMD_SET_CONTROLLER_I_BYTES 9
-/*Set the controller's integral constant. It's a 64-bit float.
+#define I2C_CMD_SET_CONTROLLER_I_BYTES 5
+/*Set the controller's integral constant. It's a 32-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
 lowest-order (least significant) byte and going to the highest-order
@@ -110,10 +110,10 @@ lowest-order (least significant) byte and going to the highest-order
 
 //--------------------------------------------------
 //set controller D
-//0x23 B BBBBBBBB
+//0x23 B BBBB
 #define I2C_CMD_SET_CONTROLLER_D 0x23
-#define I2C_CMD_SET_CONTROLLER_D_BYTES 9
-/*Set the controller's derivative constant. It's a 64-bit float.
+#define I2C_CMD_SET_CONTROLLER_D_BYTES 5
+/*Set the controller's derivative constant. It's a 32-bit float.
 
 To transfer the value, push the bytes of the target, starting with the
 lowest-order (least significant) byte and going to the highest-order
@@ -130,3 +130,13 @@ lowest-order (least significant) byte and going to the highest-order
 //0x41
 #define I2C_CMD_GET_MESSAGES 0x41
 /*This will return any messages on the controller.*/
+
+//--------------------------------------------------
+//get memory
+//0x42 B
+#define I2C_CMD_GET_VARIABLE 0x41
+#define I2C_CMD_GET_VARIABLE_BYTES 2
+/* This will return the specified debug variable. These are defined
+ * and assigned addresses in the code at compile time and represent
+ * useful pieces of debug information, such as a sensor channel's
+ * integral error value at that time. */
